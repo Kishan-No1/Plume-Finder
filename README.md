@@ -1,9 +1,21 @@
-# Vakathon
+# Plume Finder
 
-Methane detection → attribution → community action. Satellite-detected methane plumes
-(Carbon Mapper / Tanager-1, Permian basin) are attributed to a facility/operator, routed
-to the correct state regulator and rule, and turned into a resident-filed complaint that
-neighbors can corroborate with ground-truth reports and co-sign.
+**From a satellite methane detection to a complaint a resident can file.** Built at The Vakathon (July 2026).
+
+Gas facilities across Texas, New Mexico and Oklahoma vent methane every day, and the people living next to them rarely know who is responsible or which regulator to tell. Plume Finder takes public satellite plume detections (Carbon Mapper / Tanager-1) and:
+
+1. **Attributes** each plume to the most likely nearby facility and operator, with a confidence score.
+2. **Routes** it to the right state regulator and the specific rule that applies (for example, New Mexico's 98% gas-capture rule versus Texas, which has no capture mandate).
+3. **Drafts a complaint** residents can file, with an AI-drafted letter and a deterministic template fallback so the demo never depends on Wi-Fi.
+4. **Lets neighbors corroborate** a plume with ground-truth reports and co-signs, which raises the attribution confidence.
+
+Data: 47 real plumes across the Permian and Anadarko basins, with sources documented in [`data/SOURCES.md`](data/SOURCES.md). Texas operator names are labeled placeholders, because the state's public well layer has no operator field and we would not name a real company at an unverified location.
+
+## Stack
+FastAPI (Python) backend · React + TypeScript + Vite frontend · MapLibre + deck.gl map · Anthropic API
+
+## My part
+Team of 3 (Kishan Paschapur, Shiva Srinath, Shanay Verma). I built the frontend (map, plume resolve panel, report and co-sign UI, status tracker, three-state map with Oklahoma support) and the complaint-generation route with its offline fallback.
 
 ## Run it
 
@@ -17,35 +29,7 @@ cd frontend && npm install && npm run dev   # http://localhost:5173
 ```
 
 Optional: `export ANTHROPIC_API_KEY=...` before starting the backend to get
-Claude-drafted complaint letters; without it a deterministic template letter is used
+AI-drafted complaint letters; without it a deterministic template letter is used
 (demo never dead-ends on Wi-Fi).
 
-## Demo script (Sunday)
-
-1. Map loads 32 plumes over the Permian basin (teal = NM, orange = TX).
-2. Header "demo pair" buttons jump straight to the cross-border pair (same
-   Tanager-1 overpass, 2026-06-07, ~5 km apart).
-3. **NM plume** → Marathon Oil Permian LLC at ~1.1 km, confidence score, OCD +
-   19.15.27.9 NMAC (98% capture rule).
-4. Submit a ground-truth report + co-sign → confidence gets community-corroborated
-   bump, co-sign count persists.
-5. Generate complaint letter → submit → mocked status tracker.
-6. **TX plume** → operator not identified, RRC/TCEQ, 16 TAC §3.32, no capture mandate.
-7. "⚖ Compare TX vs NM" → side-by-side regulatory-gap view.
-
-## Team handoff notes
-
-- **Person A**: `data/plumes.csv` + `data/facilities.csv` are schema-exact
-  **placeholders** (only the demo pair + regulators.csv are real) — see
-  `data/SOURCES.md`. Replace with the real pulls; no code changes needed.
-  Community store is `backend/community/store.py` (JSON file; swap to SQLite if needed).
-- **Person B**: `backend/attribution/spatial_join.py` is a pure-python
-  nearest-neighbor stub — replace internals with geopandas `sjoin_nearest`, keep the
-  returned dict shape. Plug the trained model in via
-  `backend/attribution/confidence_score.py:score_pair` (expects a
-  `backend/attribution/model.py` exposing `predict(plume, facility, distance_m)`);
-  the hand-tuned scorer stays as the load-failure fallback.
-- **Person C** (done): map, resolve panel, complaint generation + fallback, status
-  tracker, comparison view, report/co-sign UI, `/complaint/generate` route.
-
-Full plan: `docs/implementation_plan.md` (plan v2).
+More: [`docs/implementation_plan.md`](docs/implementation_plan.md) · [`docs/future_roadmap.md`](docs/future_roadmap.md)
